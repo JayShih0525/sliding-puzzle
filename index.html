@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sliding Puzzle Game</title>
+    <link rel="icon" href="https://i.im.ge/2024/12/21/zxyJnD.image.png" type="image/png">
+    <link rel="stylesheet" href="https://pyscript.net/alpha/pyscript.css">
+    <script type="module" src="https://pyscript.net/releases/2024.11.1/core.js"></script>
+
+    <script type="module">
+        // Import Firebase functions
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+        import { getDatabase, ref, get, child, push, set } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
+    
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCVPBxgQgt21CrGfoyFn7XybEVGpdZQjEs",
+            authDomain: "sliding-puzzle-3ee47.firebaseapp.com",
+            databaseURL: "https://sliding-puzzle-3ee47-default-rtdb.firebaseio.com",
+            projectId: "sliding-puzzle-3ee47",
+            storageBucket: "sliding-puzzle-3ee47.firebasestorage.app",
+            messagingSenderId: "556260361773",
+            appId: "1:556260361773:web:74e90587623b422fc5daa4",
+            measurementId: "G-S06WLZCGDY"
+        };
+    
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+    
+        // Initialize Database
+        const database = getDatabase(app);
+
+
+        function writeData(path, in_name, in_move, in_best) {
+            const dataRef = ref(database, path);
+            const newPostRef = push(dataRef); 
+
+            const data = {name: in_name, move: in_move, best: in_best}
+            set(newPostRef, data)
+                .then(() => {
+                    console.log(data);
+                    console.log("Data written successfully!");
+                })
+                .catch((error) => {
+                    console.error("Error writing data:", error);
+                });
+        }
+    
+        function readAndDisplayData(path) {
+            const dbRef = ref(database, path);
+            get(child(dbRef, "/"))
+                .then((snapshot) => {
+                    if (snapshot.exists()) {
+                        const data = snapshot.val();
+                        console.log("Data read successfully:", data);
+
+                        // Convert data to an array and sort by "move"
+                        const sortedData = Object.values(data).sort((a, b) => a.move - b.move).slice(0, 100);
+                        // const sortedData = Object.values(data).sort((a, b) => (a.move - a.best) - (b.move - b.best)).slice(0, 100);
+
+                        
+                        // Update the table with sorted data
+                        updateRankingTable(sortedData);
+                    } else {
+                        console.log("No data available at the specified path.");
+                    }
+                })
+                .catch((error) => {
+                    console.error("Error reading data:", error);
+                });
+        }
+    
+
+        function updateRankingTable(sorteddata) {
+            // Get the table body element
+            const tableBody = document.getElementById("ranking-table").getElementsByTagName("tbody")[0];
+            if (!tableBody) {
+                console.error("Error: tbody element not found!");
+                return;
+            }
+
+            // Check if sorteddata is valid
+            if (!Array.isArray(sorteddata) || sorteddata.length === 0) {
+                console.error("Error: Invalid or empty data provided!");
+                tableBody.innerHTML = "<tr><td colspan='4'>No data available</td></tr>";
+                return;
+            }
+
+            // Clear the table body before adding new rows
+            tableBody.innerHTML = "";
+
+            // Populate the table with sorted data
+            sorteddata.forEach((item, index) => {
+                const row = tableBody.insertRow();
+
+                // Use default values if any field is missing
+                const name = item.name || "Unknown";
+                const move = item.move !== undefined ? item.move : "N/A";
+                const best = item.best !== undefined ? item.best : "N/A";
+
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${name}</td>
+                    <td>${move}</td>
+                    <td>${best}</td>
+                `;
+            });
+        }
+    
+        const postData = [
+            { name: "哈哈哈哈", move: 20, best: 15 },
+            { name: "Andy", move: 54, best: 20 },
+            { name: "Beth", move: 41, best: 21 },
+            { name: "Jay Shih", move: -1, best: -1}
+        ];
+    
+        // postData.forEach((data) => writeData("data", data.name, data.move, data.best));
+        readAndDisplayData("data");
+        window.writeData = writeData;
+        window.readAndDisplayData = readAndDisplayData;
+    </script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #20232a;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 110vh;
+            margin: 0;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        #puzzle-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            gap: 5px;
+        }
+        .tile {
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            background-color: #61dafb;
+            border: 2px solid #20232a;
+            cursor: pointer;
+        }
+        .empty {
+            background-color: #20232a;
+            cursor: default;
+        }
+        #controls {
+            margin-top: 20px;
+        }
+        button {
+            font-size: 16px;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border: none;
+            background-color: #61dafb;
+            color: #20232a;
+            border-radius: 5px;
+            width: 100px;
+        }
+        #message {
+            margin-top: 15px;
+            font-size: 18px;
+            color: #61dafb;
+        }
+        #move-count {
+            margin-bottom: 15px;
+        }
+        
+        /* Ranking Table Styles */
+        #ranking-container {
+            position: absolute;
+            top: 30px;
+            right: 20px;
+            background-color: #333744;
+            border: 2px solid #61dafb;
+            border-radius: 10px;
+            padding: 15px;
+            width: 300px;
+            color: white;
+        }
+        #ranking-container h2 {
+            margin-top: 0px;
+        }
+        #ranking-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        #ranking-table th, #ranking-table td {
+            border: 1px solid #61dafb;
+            padding: 5px;
+            text-align: center;
+        }
+        #ranking-table th {
+            background-color: #61dafb;
+            color: #20232a;
+        }
+        #ranking-table tr:nth-child(even) {
+            background-color: #282c34;
+        }
+
+        #solve-btn{
+            font-size: 0;
+            padding: 20px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border: none;
+            background-color: #20232a;
+            color: #20232a; 
+            border-radius: 5px;
+            width: 10px;
+            position: fixed; 
+            bottom: 0px;    
+            left: 0px;      
+        }
+        #toggleButton {
+            position: relative; 
+            top: 5px; 
+        }
+
+    </style>
+</head>
+<body>
+    <h1 style="font-size: 30px;">Sliding Puzzle Game</h1>
+    <div id="puzzle-grid"></div>
+    <div id="controls">
+        <button id="shuffle-btn">Shuffle</button>
+        <button id="again-btn">Again</button>
+    </div>
+    <p id="message"></p>
+    <p id="move-count">Moves: 0</p>
+
+    <!-- Ranking Table -->
+    <div id="ranking-container">
+        <h2>Rankings</h2>
+        <table id="ranking-table">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Player</th>
+                    <th>Moves</th>
+                    <th>Best</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <button id="toggleButton">Hide</button>
+    </div>
+    <button id="solve-btn">Solve</button>    
+
+    <script>
+        const toggleButton = document.getElementById('toggleButton');
+        const table = document.getElementById('ranking-table');
+
+        toggleButton.addEventListener('click', () => {
+            if (table.style.display === 'none') {
+                table.style.display = 'table';
+                toggleButton.textContent = 'Hide';
+            } else {
+                table.style.display = 'none';
+                toggleButton.textContent = 'Show';
+            }
+        });
+    </script>
+
+
+    <!-- PyScript Section -->
+    <py-script>
+        import random
+        import heapq
+        from js import document, window
+        from pyodide.ffi import create_proxy
+        import time
+        import threading
+
+        # Constants
+        GRID_SIZE = 3
+        GOAL_STATE = [1, 2, 3, 4, 5, 6, 7, 8, 0]
+
+        class SlidingPuzzle:
+            def __init__(self):
+                self.tiles = GOAL_STATE.copy()
+                self.empty_index = self.tiles.index(0)
+                self.grid_size = GRID_SIZE
+                self.count = 0
+                self.best = 0
+                self.record = self.tiles.copy()
+
+            @staticmethod
+            def is_solvable(state):
+                inversions = sum(
+                    1 for i in range(len(state)) for j in range(i + 1, len(state))
+                    if state[i] > state[j] != 0
+                )
+                return inversions % 2 == 0
+
+
+            @staticmethod
+            def heuristic(state):
+                """Manhattan distance heuristic."""
+                distance = 0
+                for i, value in enumerate(state):
+                    if value == 0:
+                        continue
+                    goal_row, goal_col = divmod(value - 1, GRID_SIZE)
+                    current_row, current_col = divmod(i, GRID_SIZE)
+                    distance += abs(goal_row - current_row) + abs(goal_col - current_col)
+                return distance
+
+            def solve(self):
+                """Solve the puzzle using the A* algorithm."""
+                if not self.is_solvable(self.tiles):
+                    return "unsolvable"
+
+                pq = []
+                heapq.heappush(pq, (0, self.tiles[:], []))
+                visited = set()
+
+                while pq:
+                    cost, current_state, path = heapq.heappop(pq)
+
+                    if current_state == GOAL_STATE:
+                        return path
+
+                    visited.add(tuple(current_state))
+
+                    zero_index = current_state.index(0)
+                    for neighbor in self.get_neighbors(zero_index):
+                        new_state = current_state[:]
+                        new_state[zero_index], new_state[neighbor] = new_state[neighbor], new_state[zero_index]
+
+                        if tuple(new_state) not in visited:
+                            new_cost = len(path) + 1 + self.heuristic(new_state)
+                            heapq.heappush(pq, (new_cost, new_state, path + [new_state]))
+
+                return []
+
+            def shuffle(self):
+                self.count = 0
+                while True:
+                    random.shuffle(self.tiles)
+                    if SlidingPuzzle.is_solvable(self.tiles):
+                        break
+                self.empty_index = self.tiles.index(0)
+                self.best = len(self.solve()) 
+                self.record = self.tiles.copy()
+
+
+            def again(self):
+                self.count = 0
+                self.tiles = self.record.copy()
+                self.empty_index = self.tiles.index(0)
+                self.best = len(self.solve())
+                self.record = self.tiles.copy()
+
+            def move_tile(self, index):
+                if index in self.get_neighbors(self.empty_index):
+                    self.tiles[self.empty_index], self.tiles[index] = self.tiles[index], self.tiles[self.empty_index]
+                    self.empty_index = index
+                    self.count += 1
+
+            def get_neighbors(self, index):
+                neighbors = []
+                row, col = divmod(index, self.grid_size)
+                if row > 0: neighbors.append(index - self.grid_size)
+                if row < self.grid_size - 1: neighbors.append(index + self.grid_size)
+                if col > 0: neighbors.append(index - 1)
+                if col < self.grid_size - 1: neighbors.append(index + 1)
+                return neighbors
+
+            def is_solved(self):
+                return self.tiles == GOAL_STATE
+
+        puzzle = SlidingPuzzle()
+
+
+        def render_puzzle():
+            grid = document.getElementById("puzzle-grid")
+            grid.innerHTML = ""
+            for i, value in enumerate(puzzle.tiles):
+                tile = document.createElement("div")
+                tile.classList.add("tile")
+                if value == 0:
+                    tile.classList.add("empty")
+                else:
+                    tile.innerText = str(value)
+                    tile.onclick = lambda e, idx=i: handle_tile_click(idx)
+                grid.appendChild(tile)
+
+            move_count = document.getElementById("move-count")
+            move_count.innerText = f"Moves: {puzzle.count}" 
+
+
+        def handle_tile_click(index):
+            <!-- if(not puzzle.is_solved()): -->
+            puzzle.move_tile(index)
+            render_puzzle()
+            check_puzzle_solved()
+
+
+        def handle_shuffle(event=None):
+            puzzle.shuffle()
+            render_puzzle()
+
+
+        def handle_again(event=None):
+            puzzle.again()
+            render_puzzle()
+
+
+        def handle_solve(event=None):
+            if(not puzzle.is_solved()):
+                solution_path = puzzle.solve()
+                next_state = solution_path[0]
+                puzzle.tiles = next_state.copy()
+                puzzle.empty_index = next_state.index(0)
+                puzzle.count += 1
+                render_puzzle()
+            check_puzzle_solved()
+    
+
+        def attach_listeners():
+            shuffle_btn = document.getElementById("shuffle-btn")
+            shuffle_btn.addEventListener("click", create_proxy(handle_shuffle))
+
+            again_btn = document.getElementById("again-btn")
+            again_btn.addEventListener("click", create_proxy(handle_again))
+
+            solve_btn = document.getElementById("solve-btn")
+            solve_btn.addEventListener("click", create_proxy(handle_solve))
+
+
+        def check_puzzle_solved(event=None):
+            if puzzle.is_solved():
+                render_puzzle()
+        
+                def show_prompt():
+                    name = window.prompt("Congratulations! Enter your name:", "")
+                    if not name or not name.strip():
+                        name = 'Unknown'
+        
+                    name = name[:15]
+                    move = puzzle.count
+                    best = puzzle.best
+                    window.writeData("data", name, move, best)
+                    window.readAndDisplayData("data")
+        
+                window.setTimeout(create_proxy(show_prompt), 10)
+        
+
+    
+
+        attach_listeners()
+        handle_shuffle()
+        render_puzzle()
+    </py-script>
+</body>
+</html>
