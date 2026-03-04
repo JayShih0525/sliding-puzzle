@@ -1,1 +1,1 @@
-# sliding-puzzle
+# 8-Puzzle
